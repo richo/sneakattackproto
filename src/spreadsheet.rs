@@ -34,24 +34,6 @@ pub fn build_data(rally: &structures::Rally, driver: usize, benchmarks: &[usize]
     RallyData {}
 }
 
-fn lower_to_spreadsheet(data: RallyData) -> Result<(), XlsxError> {
-    let stage_name_format = xls::Format::new()
-        .set_border(xls::FormatBorder::Thin);
-    let stage_length_format = xls::Format::new()
-        .set_border(xls::FormatBorder::Thin);
-    let class_win_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(6,3));
-    let overall_class_win_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(9, 3));
-
-    let mut workbook = Workbook::new();
-    let worksheet = workbook.add_worksheet();
-    worksheet.write(0, 0, "Hello")?;
-    workbook.save("hello.xlsx")?;
-
-    Ok(())
-}
-
 pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<(), XlsxError> {
     let bold_format = xls::Format::new().set_bold();
     let stage_name_format = xls::Format::new()
@@ -64,6 +46,8 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
         .set_bold();
 
     let stage_time_format = xls::Format::new();
+    let invalid_time_format = xls::Format::new()
+        .set_background_color(xls::Color::Theme(2,3));
     let class_win_format = xls::Format::new()
         .set_background_color(xls::Color::Theme(6,3));
     let overall_class_win_format = xls::Format::new()
@@ -92,7 +76,9 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
     worksheet.set_column_width(1, 8)?;
 
     let format_time = |time: &structures::StageTime, overall_win: &Option<structures::StageTime>, category_class_win: &Option<structures::StageTime>| {
-        if Some(time) == overall_win.as_ref() {
+        if !time.is_valid() {
+            return &invalid_time_format;
+        } else if Some(time) == overall_win.as_ref() {
             return &overall_class_win_format;
         } else if Some(time) == category_class_win.as_ref() {
             return &class_win_format;

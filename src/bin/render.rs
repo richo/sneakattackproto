@@ -5,7 +5,7 @@ use sneakattackproto::structures;
 fn main() -> Result<(), reqwest::Error> {
     // TODO(richo) Argparsing eventually
     let main_driver = 107;
-    let benchmark_drivers = [1, 135];
+    let benchmark_drivers = [1, 135, 965, 210];
 
     // let uids: Vec<structures::Uid> = fetch_sneakattack_json("uidsSmall.json")?;
     let uids: Vec<structures::Uid> = spreadsheet::load_sneakattack_json("uidsSmall.json").unwrap();
