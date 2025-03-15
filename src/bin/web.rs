@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use axum::extract::{State, Form};
 use axum::response::{Html, IntoResponse};
 use axum_extra::extract::Query;
+use tower_http::services::ServeFile;
 
 use std::collections::HashMap;
 
@@ -59,38 +60,12 @@ async fn main() {
     let state = build_state();
 
     let app = Router::new()
-        .route("/", get(show_form))
+        .route_service("/", ServeFile::new("html/timecomp.html"))
         .route("/render", get(render_timecomp))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn show_form() -> Html<&'static str> {
-    Html(
-        r#"
-        <!doctype html>
-        <html>
-            <head></head>
-            <body>
-                <form action="/" method="post">
-                    <label for="name">
-                        Enter your name:
-                        <input type="text" name="name">
-                    </label>
-
-                    <label>
-                        Enter your email:
-                        <input type="text" name="email">
-                    </label>
-
-                    <input type="submit" value="Subscribe!">
-                </form>
-            </body>
-        </html>
-        "#,
-    )
 }
 
 #[derive(Deserialize, Debug)]
