@@ -9,15 +9,17 @@ struct StageTimeRegexes {
     hoursre: Regex,
     minutesre: Regex,
     secondsre: Regex,
+    nosecondsre: Regex,
 }
 
 fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
     static REGEX: OnceLock<StageTimeRegexes> = OnceLock::new();
     let regexes = REGEX.get_or_init(|| {
         StageTimeRegexes {
-            hoursre: Regex::new(r"^(\d+):(\d+):(\d+.\d+)$").unwrap(),
-            minutesre: Regex::new(r"^(\d+):(\d+.\d+)$").unwrap(),
-            secondsre: Regex::new(r"^(\d+.\d+)$").unwrap(),
+            hoursre: Regex::new(r"^(\d+):(\d+):(\d+\.\d+)$").unwrap(),
+            minutesre: Regex::new(r"^(\d+):(\d+\.\d+)$").unwrap(),
+            secondsre: Regex::new(r"^(\d+\.\d+)$").unwrap(),
+            nosecondsre: Regex::new(r"^(\d+):(\d+)$").unwrap(),
         }
     });
 
@@ -59,10 +61,19 @@ fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
             millis * 1_000_000_00
         ) } )
     }
+    for (_, [minutes, seconds]) in regexes.nosecondsre.captures_iter(time).map(|c| c.extract()) {
+        let minutes: u64 = minutes.parse().unwrap();
+        let seconds: f32 = seconds.parse().unwrap();
+        return Some(StageTime { time: time::Duration::new(
+            (minutes * 60) +
+            seconds as u64,
+            0
+        ) } )
+    }
     return None
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Rally {
     source: String,
     startDate: String,
@@ -79,7 +90,7 @@ impl Rally {
     }
 }
 
-#[derive(Deserialize, Eq, PartialEq)]
+#[derive(Deserialize, Eq, PartialEq, Clone)]
 pub enum Category {
     National,
     Regional,
@@ -99,7 +110,7 @@ pub enum Class {
     ClassX,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 enum BoxColor {
     // TODO(richo) Yeah I dunno what this is honestly.
     #[serde(rename(deserialize = ""))]
@@ -108,18 +119,18 @@ enum BoxColor {
     Red,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Penalty {
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 enum RetirementStatus {
     Permanent,
     Temporary,
     Rejoined,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Retirement {
     control: String,
     stage: usize,
@@ -244,7 +255,7 @@ impl<'de> Deserialize<'de> for StageTime {
 }
 
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Entry {
         pub category: Category,
         pub number: usize,
@@ -260,15 +271,15 @@ pub struct Entry {
         retirements: Vec<Retirement>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Stage {
     pub name: String,
     pub length: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Uid {
-    uid: usize,
+    pub uid: usize,
     f: String,
     l: String,
     tn: Option<String>,
