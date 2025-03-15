@@ -30,7 +30,7 @@ fn main() -> Result<(), reqwest::Error> {
 
     // let uids: Vec<structures::Uid> = fetch_sneakattack_json("uidsSmall.json")?;
     let uids: Vec<structures::Uid> = load_sneakattack_json("uidsSmall.json").unwrap();
-    let rallies: Vec<structures::Rally> = load_sneakattack_json("2025rallies.json").expect("oh no");
+    let rallies: Vec<structures::Rally> = load_sneakattack_json("2024rallies.json").expect("oh no");
 
     Ok(())
 }

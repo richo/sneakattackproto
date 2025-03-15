@@ -75,6 +75,7 @@ enum Category {
     National,
     Regional,
     RallySprint,
+    Exhibition,
 }
 #[derive(Deserialize)]
 enum Class {
@@ -85,6 +86,7 @@ enum Class {
     RC2,
     NA4WD,
     #[serde(rename(deserialize = "Class-X"))]
+    #[serde(rename(deserialize = "Class X"))]
     ClassX,
 }
 
