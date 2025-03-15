@@ -7,6 +7,9 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use axum::{extract::Form, response::Html};
 
+use sneakattackproto::spreadsheet;
+use sneakattackproto::structures;
+
 #[tokio::main]
 async fn main() {
     let app = Router::new()
