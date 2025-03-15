@@ -15,9 +15,9 @@ fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
     static REGEX: OnceLock<StageTimeRegexes> = OnceLock::new();
     let regexes = REGEX.get_or_init(|| {
         StageTimeRegexes {
-            hoursre: Regex::new(r"^(\d+):(\d+):(\d+).(\d+)$").unwrap(),
-            minutesre: Regex::new(r"^(\d+):(\d+).(\d+)$").unwrap(),
-            secondsre: Regex::new(r"^(\d+).(\d+)$").unwrap(),
+            hoursre: Regex::new(r"^(\d+):(\d+):(\d+.\d+)$").unwrap(),
+            minutesre: Regex::new(r"^(\d+):(\d+.\d+)$").unwrap(),
+            secondsre: Regex::new(r"^(\d+.\d+)$").unwrap(),
         }
     });
 
@@ -26,34 +26,37 @@ fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
         return Some(StageTime { time: time::Duration::new(0, 0) })
     }
 
-    for (_, [hours, minutes, seconds, millis]) in regexes.hoursre.captures_iter(time).map(|c| c.extract()) {
+    for (_, [hours, minutes, seconds]) in regexes.hoursre.captures_iter(time).map(|c| c.extract()) {
         let hours: u64 = hours.parse().unwrap();
         let minutes: u64 = minutes.parse().unwrap();
-        let seconds: u64 = seconds.parse().unwrap();
-        let millis: u32 = millis.parse().unwrap();
+        let seconds: f32 = seconds.parse().unwrap();
+        // Make sure the tenths are correct
+        let millis = (seconds.fract() * 10f32).round() as u32;
         return Some(StageTime { time: time::Duration::new(
             (hours * 60 * 60) +
             (minutes * 60) +
-            seconds,
-            millis * 1000
+            seconds as u64,
+            millis * 1_000_000_00
         ) } )
     }
-    for (_, [minutes, seconds, millis]) in regexes.minutesre.captures_iter(time).map(|c| c.extract()) {
+    for (_, [minutes, seconds]) in regexes.minutesre.captures_iter(time).map(|c| c.extract()) {
         let minutes: u64 = minutes.parse().unwrap();
-        let seconds: u64 = seconds.parse().unwrap();
-        let millis: u32 = millis.parse().unwrap();
+        let seconds: f32 = seconds.parse().unwrap();
+        // Make sure the tenths are correct
+        let millis = (seconds.fract() * 10f32).round() as u32;
         return Some(StageTime { time: time::Duration::new(
             (minutes * 60) +
-            seconds,
-            millis * 1000
+            seconds as u64,
+            millis * 1_000_000_00
         ) } )
     }
-    for (_, [seconds, millis]) in regexes.secondsre.captures_iter(time).map(|c| c.extract()) {
-        let seconds: u64 = seconds.parse().unwrap();
-        let millis: u32 = millis.parse().unwrap();
+    for (_, [seconds]) in regexes.secondsre.captures_iter(time).map(|c| c.extract()) {
+        let seconds: f32 = seconds.parse().unwrap();
+        // Make sure the tenths are correct
+        let millis = (seconds.fract() * 10f32).round() as u32;
         return Some(StageTime { time: time::Duration::new(
-            seconds,
-            millis * 1000
+            seconds as u64,
+            millis * 1_000_000_00
         ) } )
     }
     return None
@@ -64,10 +67,10 @@ pub struct Rally {
     source: String,
     startDate: String,
     finishDate: String,
-    title: String,
+    pub title: String,
     pub slug: String,
-    entries: Vec<Entry>,
-    stages: Vec<Stage>,
+    pub entries: Vec<Entry>,
+    pub stages: Vec<Stage>,
 }
 
 impl Rally {
@@ -76,14 +79,14 @@ impl Rally {
     }
 }
 
-#[derive(Deserialize)]
-enum Category {
+#[derive(Deserialize, Eq, PartialEq)]
+pub enum Category {
     National,
     Regional,
     RallySprint,
     Exhibition,
 }
-#[derive(Deserialize, Copy, Clone)]
+#[derive(Deserialize, Copy, Clone, PartialEq)]
 pub enum Class {
     O4WD,
     L4WD,
@@ -124,8 +127,41 @@ struct Retirement {
     reason: String,
 }
 
-struct StageTime {
+#[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy)]
+pub struct StageTime {
     time: time::Duration,
+}
+
+impl StageTime {
+    pub fn is_valid(&self) -> bool {
+        !self.time.is_zero()
+    }
+
+    pub fn diff_per_mile(&self, other: Self, distance: f32) -> f32 {
+        let diff = self.time - other.time;
+        return diff.as_secs_f32() / distance
+    }
+}
+
+impl fmt::Display for StageTime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let secs = self.time.as_secs();
+        let millis = self.time.subsec_millis() ;
+
+        let hours = secs / 3600;
+        let secs = secs % 3600;
+
+        let mins = secs / 60;
+        let secs = secs % 60;
+
+        if hours > 0 {
+            return write!(f, "{}:{:02}:{:02}.{:02}", hours, mins, secs, millis);
+        }
+        if mins > 0 {
+            return write!(f, "{:02}:{:02}.{:02}", mins, secs, millis);
+        }
+        write!(f, "{:02}.{:02}", secs, millis)
+    }
 }
 
 struct StageTimeVisitor;
@@ -156,24 +192,24 @@ impl<'de> Deserialize<'de> for StageTime {
 
 #[derive(Deserialize)]
 pub struct Entry {
-        category: Category,
-        number: usize,
+        pub category: Category,
+        pub number: usize,
         driverUID: usize,
         codriverUID: usize,
         #[serde(rename(deserialize = "carClass"))]
         pub class: Class,
         #[serde(rename(deserialize = "carModel"))]
         model: String,
-        times: Vec<StageTime>,
+        pub times: Vec<StageTime>,
         colors: Vec<BoxColor>,
         penalties: Vec<Penalty>,
         retirements: Vec<Retirement>,
 }
 
 #[derive(Deserialize)]
-struct Stage {
-    name: String,
-    length: f32,
+pub struct Stage {
+    pub name: String,
+    pub length: f32,
 }
 
 #[derive(Deserialize)]
