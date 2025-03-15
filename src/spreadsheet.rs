@@ -34,7 +34,7 @@ pub fn build_data(rally: &structures::Rally, driver: usize, benchmarks: &[usize]
     RallyData {}
 }
 
-pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<(), XlsxError> {
+pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, XlsxError> {
     let bold_format = xls::Format::new().set_bold();
     let stage_name_format = xls::Format::new()
         .set_border(xls::FormatBorder::Thin);
@@ -149,7 +149,5 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
         }
     }
 
-    workbook.save("hello.xlsx")?;
-
-    Ok(())
+    Ok(workbook)
 }

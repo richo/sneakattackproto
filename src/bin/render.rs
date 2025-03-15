@@ -16,7 +16,8 @@ fn main() -> Result<(), reqwest::Error> {
     let active = rallies.iter().filter(|i| i.slug == slug).next().unwrap();
 
     let data = spreadsheet::build_data(active, main_driver, &benchmark_drivers);
-    spreadsheet::build_spreadsheet(active, main_driver, &benchmark_drivers);
+    let mut book = spreadsheet::build_spreadsheet(active, main_driver, &benchmark_drivers).unwrap();
+    book.save("timecomp.xlsx");
 
     Ok(())
 }
