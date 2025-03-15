@@ -1,5 +1,5 @@
-mod spreadsheet;
-mod structures;
+use sneakattackproto::spreadsheet;
+use sneakattackproto::structures;
 
 
 fn main() -> Result<(), reqwest::Error> {
