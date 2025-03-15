@@ -1,0 +1,11 @@
+[package]
+name = "sneakattackproto"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+regex = "1.11.1"
+reqwest = { version = "0.12.14", features = ["json", "blocking"] }
+rust_xlsxwriter = "0.84.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
