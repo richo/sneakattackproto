@@ -1,17 +1,21 @@
 use tokio;
 use axum::{
+    body::Body,
     routing::{get, post},
-    http::StatusCode,
+    http::{header, HeaderMap, StatusCode},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use axum::{extract::Form, response::Html};
+use axum::extract::{State, Form};
+use axum::response::{Html, IntoResponse};
 use axum_extra::extract::Query;
 
 use std::collections::HashMap;
 
 use sneakattackproto::spreadsheet;
 use sneakattackproto::structures;
+use std::sync::OnceLock;
+use regex::Regex;
 
 // It'd be better if this was Cow or whatever
 #[derive(Clone)]
@@ -97,6 +101,24 @@ struct TimeComp {
     event: String,
 }
 
-async fn render_timecomp(input: Query<TimeComp>) {
-    dbg!(&input);
+async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>) -> impl IntoResponse {
+    // Split up year and slug
+    static REGEX: OnceLock<regex::Regex> = OnceLock::new();
+    let re = REGEX.get_or_init(|| { Regex::new(r"^(\d+)\|(.+)$").unwrap() });
+
+    let (_, [year, slug]) = re.captures_iter(&input.event).map(|c| c.extract()).next().unwrap();
+    let year: usize = year.parse().unwrap();
+
+    let active = &state.rallies[&year][slug];
+
+    let mut book = spreadsheet::build_spreadsheet(&active, input.driver, &input.benchmarks).unwrap();
+    let buf = book.save_to_buffer().unwrap();
+
+    let content_disposition_header = format!("attachment; filename=\"{}_{}.xlsx\"", &input.event, &input.driver);
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE, "text/toml; charset=utf-8".parse().unwrap());
+    headers.insert(header::CONTENT_DISPOSITION, content_disposition_header.parse().unwrap());
+
+    (headers, buf)
 }
