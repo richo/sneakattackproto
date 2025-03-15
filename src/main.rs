@@ -101,6 +101,14 @@ fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usi
         }
     };
 
+    let format_delta = |delta: f32| {
+        if delta.is_sign_positive() {
+            return &delta_faster_format;
+        }else {
+            return &delta_format;
+        }
+    };
+
     let driver_column = 2;
     let benchmark_start_column = 4;
 
@@ -139,11 +147,16 @@ fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usi
 
         for (i, benchmark) in benchmarks.iter().enumerate() {
             let benchmark_time = benchmark.times[stage_number];
+            let delta = driver_time.diff_per_mile(benchmark_time, stage.length);
 
             worksheet.write_with_format(stage_start_row + stage_number as u32,
                 benchmark_start_column + (i * 2) as u16,
                 benchmark_time.to_string(),
                 format_time(&benchmark_time, &overall_win, &class_win))?;
+            worksheet.write_with_format(stage_start_row + stage_number as u32,
+                benchmark_start_column + 1 + (i * 2) as u16,
+                delta,
+                format_delta(delta))?;
         }
     }
 
