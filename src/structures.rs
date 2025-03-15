@@ -65,9 +65,15 @@ pub struct Rally {
     startDate: String,
     finishDate: String,
     title: String,
-    slug: String,
+    pub slug: String,
     entries: Vec<Entry>,
     stages: Vec<Stage>,
+}
+
+impl Rally {
+    pub fn entry_by_driver_number<'a>(&'a self, number: usize) -> Option<&'a Entry> {
+        self.entries.iter().filter(|i| i.number == number).next()
+    }
 }
 
 #[derive(Deserialize)]
@@ -77,8 +83,8 @@ enum Category {
     RallySprint,
     Exhibition,
 }
-#[derive(Deserialize)]
-enum Class {
+#[derive(Deserialize, Copy, Clone)]
+pub enum Class {
     O4WD,
     L4WD,
     O2WD,
@@ -149,13 +155,15 @@ impl<'de> Deserialize<'de> for StageTime {
 
 
 #[derive(Deserialize)]
-struct Entry {
+pub struct Entry {
         category: Category,
         number: usize,
         driverUID: usize,
         codriverUID: usize,
-        carClass: Class,
-        carModel: String,
+        #[serde(rename(deserialize = "carClass"))]
+        pub class: Class,
+        #[serde(rename(deserialize = "carModel"))]
+        model: String,
         times: Vec<StageTime>,
         colors: Vec<BoxColor>,
         penalties: Vec<Penalty>,
