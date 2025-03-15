@@ -137,9 +137,63 @@ impl StageTime {
         !self.time.is_zero()
     }
 
-    pub fn diff_per_mile(&self, other: Self, distance: f32) -> f32 {
-        let diff = self.time - other.time;
-        return diff.as_secs_f32() / distance
+    pub fn diff_per_mile(&self, other: &Self, distance: f32) -> Delta {
+        if ! (self.is_valid() && other.is_valid()) {
+            return Delta::invalid();
+        }
+
+        if self > other {
+            return Delta {
+                delta: (self.time - other.time).as_secs_f32() / distance,
+                kind: DeltaKind::Slower,
+            }
+        } else if other > self {
+            return Delta {
+                delta: (other.time - self.time).as_secs_f32() / distance,
+                kind: DeltaKind::Faster,
+            }
+        }
+        return Delta::equal();
+    }
+}
+
+pub enum DeltaKind {
+    Faster,
+    Slower,
+    Equal,
+    Invalid,
+}
+
+pub struct Delta {
+    pub delta: f32,
+    pub kind: DeltaKind,
+}
+
+impl Delta {
+    fn invalid() -> Self {
+        Delta {
+            delta: 0.0,
+            kind: DeltaKind::Invalid,
+        }
+    }
+
+    fn equal() -> Self {
+        Delta {
+            delta: 0.0,
+            kind: DeltaKind::Equal,
+        }
+    }
+}
+
+impl fmt::Display for Delta {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let sign = match self.kind {
+            DeltaKind::Invalid |
+                DeltaKind::Equal |
+                DeltaKind::Faster => "",
+            DeltaKind::Slower => "-",
+        };
+        return write!(f, "{}{:.02}", sign, self.delta)
     }
 }
 

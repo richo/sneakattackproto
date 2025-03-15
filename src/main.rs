@@ -69,8 +69,8 @@ fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usi
     let overall_class_win_format = xls::Format::new()
         .set_background_color(xls::Color::Theme(9, 3));
 
-    let delta_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(3,2));
+    let delta_invalid_format = xls::Format::new();
+    let delta_format = xls::Format::new();
     let delta_faster_format = xls::Format::new()
         .set_background_color(xls::Color::Theme(6,2));
 
@@ -101,11 +101,12 @@ fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usi
         }
     };
 
-    let format_delta = |delta: f32| {
-        if delta.is_sign_positive() {
-            return &delta_faster_format;
-        }else {
-            return &delta_format;
+    let format_delta = |delta: structures::Delta| {
+        match delta.kind {
+            structures::DeltaKind::Invalid |
+                structures::DeltaKind::Equal => &delta_invalid_format,
+            structures::DeltaKind::Faster => &delta_faster_format,
+            structures::DeltaKind::Slower => &delta_format
         }
     };
 
@@ -147,16 +148,18 @@ fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usi
 
         for (i, benchmark) in benchmarks.iter().enumerate() {
             let benchmark_time = benchmark.times[stage_number];
-            let delta = driver_time.diff_per_mile(benchmark_time, stage.length);
 
             worksheet.write_with_format(stage_start_row + stage_number as u32,
                 benchmark_start_column + (i * 2) as u16,
                 benchmark_time.to_string(),
                 format_time(&benchmark_time, &overall_win, &class_win))?;
-            worksheet.write_with_format(stage_start_row + stage_number as u32,
-                benchmark_start_column + 1 + (i * 2) as u16,
-                delta,
-                format_delta(delta))?;
+            if benchmark_time.is_valid() && driver_time.is_valid() {
+                let delta = driver_time.diff_per_mile(&benchmark_time, stage.length);
+                worksheet.write_with_format(stage_start_row + stage_number as u32,
+                    benchmark_start_column + 1 + (i * 2) as u16,
+                    delta.to_string(),
+                    format_delta(delta))?;
+            }
         }
     }
 
