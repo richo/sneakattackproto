@@ -76,17 +76,29 @@ struct TimeComp {
     event: String,
 }
 
-async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>) -> impl IntoResponse {
+async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Split up year and slug
     static REGEX: OnceLock<regex::Regex> = OnceLock::new();
     let re = REGEX.get_or_init(|| { Regex::new(r"^(\d+)\|(.+)$").unwrap() });
 
-    let (_, [year, slug]) = re.captures_iter(&input.event).map(|c| c.extract()).next().unwrap();
-    let year: usize = year.parse().unwrap();
+    let (_, [year, slug]) = re.captures_iter(&input.event)
+        .map(|c| c.extract()).next()
+        .ok_or((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to parse year|slug"),
+            ))?;
+    let year: usize = year.parse()
+        .map_err(|_| (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to parse year {year}"),
+        ))?;
 
     let active = &state.rallies[&year][slug];
 
-    let mut book = spreadsheet::build_spreadsheet(&active, input.driver, &input.benchmarks).unwrap();
+    let mut book = spreadsheet::build_spreadsheet(&active, input.driver, &input.benchmarks).map_err(|e| (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to build spreadsheet: {e}"),
+    ))?;
     let buf = book.save_to_buffer().unwrap();
 
     let content_disposition_header = format!("attachment; filename=\"{}_{}.xlsx\"", &input.event, &input.driver);
@@ -95,5 +107,5 @@ async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>
     headers.insert(header::CONTENT_TYPE, "text/toml; charset=utf-8".parse().unwrap());
     headers.insert(header::CONTENT_DISPOSITION, content_disposition_header.parse().unwrap());
 
-    (headers, buf)
+    Ok((headers, buf))
 }
