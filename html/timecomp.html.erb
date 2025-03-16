@@ -6,8 +6,39 @@
     <title>recce.tools | Time Comp Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="text/javascript">
+    onLoad = function() {
+      const ls = window.localStorage;
+      driver_number = ls.getItem("driver_number");
+      if (driver_number !== null) {
+        document.getElementById('driver_number').value = driver_number;
+      }
+      if (benchmarks = JSON.parse(ls.getItem("benchmarks"))) {
+        benchmarks.forEach((bm) => {
+          document.getElementById(`benchmark${bm}`).checked = true;
+        });
+      }
+
+      let form = document.getElementById("timecomp_form");
+      form.addEventListener("submit", saveState, false);
+    };
+
+    saveState = function() {
+      const ls = window.localStorage;
+      let driver_number = document.getElementById('driver_number').value;
+      ls.setItem("driver_number", driver_number);
+
+      let benchmarks = [];
+      for (benchmark of document.getElementsByClassName("benchmarks-cb")) {
+        if (benchmark.checked) {
+          benchmarks.push(benchmark.value);
+        }
+      }
+      ls.setItem("benchmarks", JSON.stringify(benchmarks)); };
+
+  </script>
   </head>
-  <body>
+  <body onload="onLoad()">
 
 	<div class="container text-center">
 	  <div class="mx-auto">
@@ -18,7 +49,7 @@
         <!-- TODO(richo) Do some localstorage thing to persist these -->
         <div class="container">
           <!-- <form action="https://timecomp.recce.tools/render" method="get"> -->
-          <form action="https://timecomp.onrender.com/render" method="get">
+          <form action="https://timecomp.onrender.com/render" method="get" id="timecomp_form">
             <div class="row">
               <div class="col">
                 <label for="name">Race:</label>
@@ -42,7 +73,7 @@
           <% @all_numbers.each_slice(8).each do |list| %>
           <div class="row">
             <% list.each do |number| %>
-              <div class="col"><label><input type="checkbox" name="benchmarks" id="benchmark<%=number%>" value="<%= number %>"><span><%= number %></span></label></div>
+              <div class="col"><label><input type="checkbox" class="benchmarks-cb" name="benchmarks" id="benchmark<%=number%>" value="<%= number %>"><span><%= number %></span></label></div>
             <% end %>
           </div>
           <% end %>
