@@ -5,7 +5,7 @@ update_rallies:
 	curl https://sneakattackrally.com/ARACombinerThing/data/2024rallies.json > 2024rallies.json
 	curl https://sneakattackrally.com/ARACombinerThing/data/2025rallies.json > 2025rallies.json
 
-html/timecomp.html: html/timecomp.html.erb html/generate-form.rb
+html/timecomp.html: html/timecomp.html.erb html/generate-form.rb 2024rallies.json 2025rallies.json
 	cd html && ruby generate-form.rb
 
 
