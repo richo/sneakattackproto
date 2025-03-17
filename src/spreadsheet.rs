@@ -2,6 +2,8 @@ use reqwest;
 use serde;
 use serde_json;
 use std::fs;
+use std::fmt;
+use std::error::Error;
 use rust_xlsxwriter::{self as xls, Workbook, XlsxError};
 
 use crate::structures;
@@ -34,7 +36,28 @@ pub fn build_data(rally: &structures::Rally, driver: usize, benchmarks: &[usize]
     RallyData {}
 }
 
-pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, XlsxError> {
+#[derive(Debug)]
+pub struct SpreadSheetError {
+    message: String
+}
+
+impl SpreadSheetError {
+    pub fn new(msg: String) -> Self {
+        Self {
+            message: msg,
+        }
+    }
+}
+
+impl fmt::Display for SpreadSheetError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SpreadSheetError: {}", self.message)
+    }
+}
+
+impl Error for SpreadSheetError {}
+
+pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
     let bold_format = xls::Format::new().set_bold();
     let stage_name_format = xls::Format::new()
         .set_border(xls::FormatBorder::Thin);
@@ -58,7 +81,10 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
     let delta_faster_format = xls::Format::new()
         .set_background_color(xls::Color::Theme(6,2));
 
-    let driver = rally.entries.iter().filter(|x| x.number == driver).next().unwrap();
+    let driver = rally.entries.iter()
+        .filter(|x| x.number == driver)
+        .next()
+        .ok_or_else(|| Box::new(SpreadSheetError::new(format!("Driver {} did not race in {}", driver, rally.title))))?;
     let benchmarks: Vec<_> = rally.entries.iter().filter(|x| benchmarks.contains(&x.number)).collect();
 
     let mut workbook = Workbook::new();
