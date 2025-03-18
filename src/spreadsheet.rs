@@ -8,6 +8,52 @@ use rust_xlsxwriter::{self as xls, Workbook, XlsxError};
 
 use crate::structures;
 
+mod format {
+    use super::xls;
+    pub(super) struct Formats {
+        pub bold: xls::Format,
+        pub stage_name: xls::Format,
+        pub stage_length: xls::Format,
+        pub stage_time: xls::Format,
+        pub heading: xls::Format,
+        pub invalid_time: xls::Format,
+        pub overall_class_win: xls::Format,
+        pub class_win: xls::Format,
+        pub delta: xls::Format,
+        pub delta_invalid: xls::Format,
+        pub delta_faster: xls::Format,
+    }
+
+    pub(super) fn get_formats() -> Formats {
+        Formats {
+            bold: xls::Format::new()
+                .set_bold(),
+            stage_name: xls::Format::new()
+                .set_border(xls::FormatBorder::Thin),
+            stage_length: xls::Format::new()
+                .set_border(xls::FormatBorder::Thin)
+                .set_num_format("0.00"),
+            stage_time: xls::Format::new(),
+
+            heading: xls::Format::new()
+                .set_border(xls::FormatBorder::Medium)
+                .set_bold(),
+
+            invalid_time: xls::Format::new()
+                .set_background_color(xls::Color::Theme(2,3)),
+            overall_class_win: xls::Format::new()
+                .set_background_color(xls::Color::Theme(9, 3)),
+            class_win: xls::Format::new()
+                .set_background_color(xls::Color::Theme(6,3)),
+
+            delta: xls::Format::new(),
+            delta_invalid: xls::Format::new(),
+            delta_faster: xls::Format::new()
+                .set_background_color(xls::Color::Theme(6,2)),
+        }
+    }
+}
+
 const SNEAK_ATTACK_BASE: &'static str = "https://sneakattackrally.com/ARACombinerThing/data";
 fn fetch_sneakattack_json<'a, T: serde::de::DeserializeOwned>(name: &'a str) -> Result<T, reqwest::Error> {
     let path = format!("{}/{}", SNEAK_ATTACK_BASE, name);
@@ -58,29 +104,8 @@ impl fmt::Display for SpreadSheetError {
 impl Error for SpreadSheetError {}
 
 pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
-    let bold_format = xls::Format::new().set_bold();
-    let stage_name_format = xls::Format::new()
-        .set_border(xls::FormatBorder::Thin);
-    let stage_length_format = xls::Format::new()
-        .set_border(xls::FormatBorder::Thin)
-        .set_num_format("0.00");
-    let heading_format = xls::Format::new()
-        .set_border(xls::FormatBorder::Medium)
-        .set_bold();
 
-    let stage_time_format = xls::Format::new();
-    let invalid_time_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(2,3));
-    let class_win_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(6,3));
-    let overall_class_win_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(9, 3));
-
-    let delta_invalid_format = xls::Format::new();
-    let delta_format = xls::Format::new();
-    let delta_faster_format = xls::Format::new()
-        .set_background_color(xls::Color::Theme(6,2));
-
+    let formats = format::get_formats();
     let driver = rally.entries.iter()
         .filter(|x| x.number == driver)
         .next()
@@ -94,31 +119,31 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
     let stage_start_row = 2;
     // Title/Stage names columns
     worksheet.set_column_width(0, 18)?;
-    worksheet.write_with_format(0, 0, &rally.title, &bold_format)?;
-    worksheet.write_with_format(1, 0, "Stage Name", &heading_format)?;
-    worksheet.write_with_format(1, 1, "Length", &heading_format)?;
+    worksheet.write_with_format(0, 0, &rally.title, &formats.bold)?;
+    worksheet.write_with_format(1, 0, "Stage Name", &formats.heading)?;
+    worksheet.write_with_format(1, 1, "Length", &formats.heading)?;
 
     // Milage column
     worksheet.set_column_width(1, 8)?;
 
     let format_time = |time: &structures::StageTime, overall_win: &Option<structures::StageTime>, category_class_win: &Option<structures::StageTime>| {
         if !time.is_valid() {
-            return &invalid_time_format;
+            return &formats.invalid_time;
         } else if Some(time) == overall_win.as_ref() {
-            return &overall_class_win_format;
+            return &formats.overall_class_win;
         } else if Some(time) == category_class_win.as_ref() {
-            return &class_win_format;
+            return &formats.class_win;
         } else {
-            return &stage_time_format;
+            return &formats.stage_time;
         }
     };
 
     let format_delta = |delta: structures::Delta| {
         match delta.kind {
             structures::DeltaKind::Invalid |
-                structures::DeltaKind::Equal => &delta_invalid_format,
-            structures::DeltaKind::Faster => &delta_faster_format,
-            structures::DeltaKind::Slower => &delta_format
+                structures::DeltaKind::Equal => &formats.delta_invalid,
+            structures::DeltaKind::Faster => &formats.delta_faster,
+            structures::DeltaKind::Slower => &formats.delta
         }
     };
 
@@ -127,19 +152,19 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
 
     worksheet.write_with_format(1, driver_column,
         format!("{}", driver.number), // TODO(richo) Do the uid lookup thing to figure out who we are
-        &heading_format)?;
+        &formats.heading)?;
     for (i, benchmark) in benchmarks.iter().enumerate() {
         worksheet.write_with_format(1, benchmark_start_column + (i * 2) as u16,
             format!("{}", benchmark.number),
-            &heading_format)?;
+            &formats.heading)?;
         worksheet.write_with_format(1, benchmark_start_column + 1 + (i * 2) as u16,
             "Diff s/mi",
-            &heading_format)?;
+            &formats.heading)?;
     }
 
     for (stage_number, stage) in rally.stages.iter().enumerate() {
-        worksheet.write_with_format(stage_start_row + stage_number as u32, 0, &stage.name, &stage_name_format)?;
-        worksheet.write_with_format(stage_start_row + stage_number as u32, 1, stage.length, &stage_length_format)?;
+        worksheet.write_with_format(stage_start_row + stage_number as u32, 0, &stage.name, &formats.stage_name)?;
+        worksheet.write_with_format(stage_start_row + stage_number as u32, 1, stage.length, &formats.stage_length)?;
 
         let overall_win = rally.entries.iter()
             .filter(|x| x.class == driver.class)
