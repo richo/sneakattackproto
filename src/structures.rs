@@ -110,8 +110,8 @@ pub enum Class {
     ClassX,
 }
 
-#[derive(Deserialize, Clone)]
-enum BoxColor {
+#[derive(Deserialize, Clone, PartialEq)]
+pub enum BoxColor {
     // TODO(richo) Yeah I dunno what this is honestly.
     #[serde(rename(deserialize = ""))]
     None,
@@ -266,7 +266,7 @@ pub struct Entry {
         #[serde(rename(deserialize = "carModel"))]
         model: String,
         pub times: Vec<StageTime>,
-        colors: Vec<BoxColor>,
+        pub colors: Vec<BoxColor>,
         penalties: Vec<Penalty>,
         retirements: Vec<Retirement>,
 }

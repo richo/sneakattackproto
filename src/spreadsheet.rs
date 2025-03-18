@@ -22,9 +22,13 @@ mod format {
         pub delta: xls::Format,
         pub delta_invalid: xls::Format,
         pub delta_faster: xls::Format,
+        pub super_rally: xls::Format,
     }
 
     pub(super) fn get_formats() -> Formats {
+        let stage_time = xls::Format::new()
+                .set_align(xls::FormatAlign::Right);
+
         Formats {
             bold: xls::Format::new()
                 .set_bold(),
@@ -33,23 +37,26 @@ mod format {
             stage_length: xls::Format::new()
                 .set_border(xls::FormatBorder::Thin)
                 .set_num_format("0.00"),
-            stage_time: xls::Format::new(),
-
             heading: xls::Format::new()
                 .set_border(xls::FormatBorder::Medium)
                 .set_bold(),
 
-            invalid_time: xls::Format::new()
+            invalid_time: stage_time.clone()
                 .set_background_color(xls::Color::Theme(2,3)),
-            overall_class_win: xls::Format::new()
+            overall_class_win: stage_time.clone()
                 .set_background_color(xls::Color::Theme(9, 3)),
-            class_win: xls::Format::new()
+            class_win: stage_time.clone()
                 .set_background_color(xls::Color::Theme(6,3)),
 
             delta: xls::Format::new(),
             delta_invalid: xls::Format::new(),
             delta_faster: xls::Format::new()
                 .set_background_color(xls::Color::Theme(6,2)),
+
+            super_rally: stage_time.clone()
+                .set_background_color(xls::Color::Theme(5,3)),
+
+            stage_time,
         }
     }
 }
@@ -181,15 +188,22 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
 
         let driver_time = driver.times[stage_number];
 
-        worksheet.write_with_format(stage_start_row + stage_number as u32, driver_column, driver_time.to_string(), format_time(&driver_time, &overall_win, &class_win))?;
+        let mut fmt = format_time(&driver_time, &overall_win, &class_win);
+        if driver.colors[stage_number] == structures::BoxColor::Red {
+            fmt = &formats.super_rally;
+        }
+        worksheet.write_with_format(stage_start_row + stage_number as u32, driver_column, driver_time.to_string(), fmt)?;
 
         for (i, benchmark) in benchmarks.iter().enumerate() {
             let benchmark_time = benchmark.times[stage_number];
-
+            let mut fmt = format_time(&benchmark_time, &overall_win, &class_win);
+            if benchmark.colors[stage_number] == structures::BoxColor::Red {
+                fmt = &formats.super_rally;
+            }
             worksheet.write_with_format(stage_start_row + stage_number as u32,
                 benchmark_start_column + (i * 2) as u16,
                 benchmark_time.to_string(),
-                format_time(&benchmark_time, &overall_win, &class_win))?;
+                fmt)?;
             if benchmark_time.is_valid() && driver_time.is_valid() {
                 let delta = driver_time.diff_per_mile(&benchmark_time, stage.length);
                 worksheet.write_with_format(stage_start_row + stage_number as u32,
