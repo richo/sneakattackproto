@@ -4,6 +4,9 @@ use std::sync::OnceLock;
 use regex::Regex;
 use serde::de::{self, Visitor, Deserializer};
 use std::fmt;
+use std::collections::HashMap;
+
+pub type UidMap = HashMap::<usize, Uid>;
 
 struct StageTimeRegexes {
     hoursre: Regex,
@@ -259,8 +262,8 @@ impl<'de> Deserialize<'de> for StageTime {
 pub struct Entry {
         pub category: Category,
         pub number: usize,
-        driverUID: usize,
-        codriverUID: usize,
+        pub driverUID: usize,
+        pub codriverUID: usize,
         #[serde(rename(deserialize = "carClass"))]
         pub class: Class,
         #[serde(rename(deserialize = "carModel"))]
@@ -290,4 +293,14 @@ pub struct Uid {
     tw: Option<String>,
     web: Option<String>,
     email: Option<String>,
+}
+
+impl Uid {
+    pub fn first_name(&self) -> &str {
+        &self.f
+    }
+
+    pub fn last_name(&self) -> &str {
+        &self.l
+    }
 }

@@ -14,7 +14,7 @@ use tower_http::services::ServeFile;
 use std::collections::HashMap;
 
 use sneakattackproto::spreadsheet;
-use sneakattackproto::structures;
+use sneakattackproto::structures::{self, UidMap};
 use std::sync::OnceLock;
 use regex::Regex;
 
@@ -33,7 +33,7 @@ const RALLY_DATA: &[(usize, &'static str)] = &[
 
 fn build_state() -> RallyState {
 
-    let mut uids = HashMap::<usize, structures::Uid>::new();
+    let mut uids = UidMap::new();
     let uids_list: Vec<structures::Uid> = spreadsheet::load_sneakattack_json("uidsSmall.json").unwrap();
     for uid in uids_list {
         uids.insert(uid.uid, uid);
@@ -95,7 +95,7 @@ async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>
 
     let active = &state.rallies[&year][slug];
 
-    let mut book = spreadsheet::build_spreadsheet(&active, input.driver, &input.benchmarks).map_err(|e| (
+    let mut book = spreadsheet::build_spreadsheet(&active, &state.uids, input.driver, &input.benchmarks).map_err(|e| (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to build spreadsheet: {e}"),
     ))?;

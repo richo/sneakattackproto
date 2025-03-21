@@ -6,7 +6,7 @@ use std::fmt;
 use std::error::Error;
 use rust_xlsxwriter::{self as xls, Workbook, XlsxError};
 
-use crate::structures;
+use crate::structures::{self, UidMap};
 
 mod format {
     use super::xls;
@@ -23,6 +23,7 @@ mod format {
         pub delta_invalid: xls::Format,
         pub delta_faster: xls::Format,
         pub super_rally: xls::Format,
+        pub driver_names: xls::Format,
     }
 
     pub(super) fn get_formats() -> Formats {
@@ -55,6 +56,10 @@ mod format {
 
             super_rally: stage_time.clone()
                 .set_background_color(xls::Color::Theme(5,3)),
+
+            driver_names: xls::Format::new()
+                .set_border(xls::FormatBorder::Medium)
+                .set_bold(),
 
             stage_time,
         }
@@ -110,7 +115,7 @@ impl fmt::Display for SpreadSheetError {
 
 impl Error for SpreadSheetError {}
 
-pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
+pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
 
     let formats = format::get_formats();
     let driver = rally.entries.iter()
@@ -161,6 +166,15 @@ pub fn build_spreadsheet(rally: &structures::Rally, driver: usize, benchmarks: &
         format!("{}", driver.number), // TODO(richo) Do the uid lookup thing to figure out who we are
         &formats.heading)?;
     for (i, benchmark) in benchmarks.iter().enumerate() {
+        let bm_driver = &uids[&benchmark.driverUID];
+        let driver_last_name = bm_driver.last_name();
+        let bm_codriver = &uids[&benchmark.codriverUID];
+        let codriver_last_name = bm_codriver.last_name();
+
+        worksheet.merge_range(0, benchmark_start_column + (i *2 ) as u16,
+                              0, benchmark_start_column + 1 + (i * 2) as u16,
+            &format!("{}/{}", driver_last_name, codriver_last_name),
+            &formats.driver_names)?;
         worksheet.write_with_format(1, benchmark_start_column + (i * 2) as u16,
             format!("{}", benchmark.number),
             &formats.heading)?;
