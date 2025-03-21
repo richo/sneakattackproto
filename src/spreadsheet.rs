@@ -28,7 +28,11 @@ mod format {
 
     pub(super) fn get_formats() -> Formats {
         let stage_time = xls::Format::new()
-                .set_align(xls::FormatAlign::Right);
+                .set_align(xls::FormatAlign::Right)
+                .set_border_left(xls::FormatBorder::Thin);
+
+        let delta = xls::Format::new()
+            .set_border_right(xls::FormatBorder::Thin);
 
         Formats {
             bold: xls::Format::new()
@@ -49,9 +53,8 @@ mod format {
             class_win: stage_time.clone()
                 .set_background_color(xls::Color::Theme(6,3)),
 
-            delta: xls::Format::new(),
-            delta_invalid: xls::Format::new(),
-            delta_faster: xls::Format::new()
+            delta_invalid: delta.clone(),
+            delta_faster: delta.clone()
                 .set_background_color(xls::Color::Theme(6,2)),
 
             super_rally: stage_time.clone()
@@ -62,6 +65,7 @@ mod format {
                 .set_bold(),
 
             stage_time,
+            delta,
         }
     }
 }
