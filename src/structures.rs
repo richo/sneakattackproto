@@ -98,6 +98,7 @@ pub enum Category {
     National,
     Regional,
     RallySprint,
+     #[serde(rename(deserialize = "Rally Ready RallySprint"))]
     RallyReadyRallySprint,
     Exhibition,
 }
