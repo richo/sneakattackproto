@@ -98,6 +98,7 @@ pub enum Category {
     National,
     Regional,
     RallySprint,
+    RallyReadyRallySprint,
     Exhibition,
 }
 #[derive(Deserialize, Copy, Clone, PartialEq)]
