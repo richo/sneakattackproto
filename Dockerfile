@@ -1,20 +1,15 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
-WORKDIR /app
+FROM rust:latest as builder
 
-FROM chef AS planner
+WORKDIR /usr/src/app
 COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
+# Will build and cache the binary and dependent crates in release mode
+RUN --mount=type=cache,target=/usr/local/cargo,from=rust:latest,source=/usr/local/cargo \
+    --mount=type=cache,target=target \
+        cargo build --release && mv ./target/release/web ./web
 
-FROM chef AS builder
-COPY --from=planner /app/recipe.json recipe.json
-# Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json
-# Build application
-COPY . .
-RUN cargo build --release --bin web
+FROM debian:bullseye-slim
+RUN apt-get update && apt install -y openssl
 
-# We do not need the Rust toolchain to run the binary!
-FROM debian:bookworm-slim AS runtime
 WORKDIR /app
-COPY --from=builder /app/target/release/web /usr/local/bin
+COPY --from=builder /usr/src/app/web /usr/local/bin
 ENTRYPOINT ["/usr/local/bin/web"]
