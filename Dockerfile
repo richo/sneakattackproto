@@ -7,7 +7,7 @@ RUN --mount=type=cache,target=/usr/local/cargo,from=rust:latest,source=/usr/loca
     --mount=type=cache,target=target \
         cargo build --release && mv ./target/release/web ./web
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 RUN apt-get update && apt install -y openssl
 
 WORKDIR /app
