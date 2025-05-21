@@ -119,6 +119,10 @@ impl fmt::Display for SpreadSheetError {
 
 impl Error for SpreadSheetError {}
 
+pub fn build_stage_with_splits(rally: &structures::Rally, stage: &structures::Stage, sheet: &mut xls::Worksheet) -> Result<(), Box<dyn Error>> {
+    Ok(())
+}
+
 pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
 
     let formats = format::get_formats();
@@ -130,6 +134,7 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
 
     let mut workbook = Workbook::new();
     let worksheet = workbook.add_worksheet();
+    worksheet.set_name(&rally.slug)?;
 
     // Welp time to do a bunch of bookkeeping!
     let stage_start_row = 2;
@@ -230,6 +235,12 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
                     format_delta(delta))?;
             }
         }
+    }
+
+    for (stage_number, stage) in rally.stages.iter().enumerate() {
+        let mut split_sheet = workbook.add_worksheet();
+        split_sheet.set_name(format!("SS{} {}", stage_number, &stage.name))?;
+        build_stage_with_splits(&rally, &stage, &mut split_sheet)?;
     }
 
     Ok(workbook)
