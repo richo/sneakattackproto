@@ -26,6 +26,17 @@ mod format {
         pub driver_names: xls::Format,
     }
 
+    impl Formats {
+        pub fn delta(&self, delta: crate::structures::Delta) -> &xls::Format {
+            match delta.kind {
+                crate::structures::DeltaKind::Invalid |
+                    crate::structures::DeltaKind::Equal => &self.delta_invalid,
+                crate::structures::DeltaKind::Faster => &self.delta_faster,
+                crate::structures::DeltaKind::Slower => &self.delta
+            }
+        }
+    }
+
     pub(super) fn get_formats() -> Formats {
         let stage_time = xls::Format::new()
                 .set_align(xls::FormatAlign::Right)
@@ -119,33 +130,100 @@ impl fmt::Display for SpreadSheetError {
 
 impl Error for SpreadSheetError {}
 
-pub fn build_stage_with_splits(rally: &structures::Rally, stage: &structures::Stage, sheet: &mut xls::Worksheet) -> Result<(), Box<dyn Error>> {
+pub fn build_stage_with_splits(rally: &structures::Rally, uids: &UidMap, driver: &structures::Entry, benchmarks: &Vec<&structures::Entry>, stage: &structures::Stage, stage_index: usize, sheet: &mut xls::Worksheet) -> Result<(), Box<dyn Error>> {
+    let formats = format::get_formats();
+
+    // Other way around, we'll do drivers per row
+    sheet.set_column_width(0, 18)?;
+    sheet.write_with_format(0, 0, &stage.name, &formats.bold)?;
+    sheet.write_with_format(0, 1, "Length", &formats.heading)?;
+    sheet.write_with_format(0, 2, stage.length, &formats.stage_length)?;
+
+    sheet.write_with_format(1, 0, "Team", &formats.heading)?;
+
+    let stage_splits = stage.splits_with_finish();
+    for (i, split) in stage_splits.iter().enumerate() {
+        let col = ((1+i) * 3) as u16;
+        sheet.write_with_format(1, col,
+            *split,
+            &formats.stage_length)?;
+        sheet.write_with_format(1, col+1,
+            "Diff s/mi",
+            &formats.stage_name)?;
+
+        sheet.write_with_format(1, col+2,
+            "Cumulative s/mi",
+            &formats.stage_name)?;
+    }
+
+
+
+    let name_column = 0;
+    let driver_row = 2;
+    sheet.write_with_format(driver_row, name_column,
+        driver.names(&uids),
+        &formats.heading)?;
+    let driver_splits = &driver.splits_with_finish()[stage_index];
+    let driver_sectors = &driver.sectors_with_finish()[stage_index];
+    for (n, split) in driver_splits.iter().enumerate() {
+        sheet.write_with_format(driver_row,
+            (n*3 + 3) as u16,
+            split.to_string(),
+            &formats.stage_time)?;
+    }
+
+    let benchmark_start = 3;
+    for (row, bm) in benchmarks.iter().enumerate() {
+        let row = (row + benchmark_start) as u32;
+        sheet.write_with_format(
+            row,
+            name_column,
+            bm.names(&uids),
+            &formats.bold)?;
+        let bm_splits = &bm.splits_with_finish()[stage_index];
+        let bm_sectors = &bm.sectors_with_finish()[stage_index];
+        let mut prev_split_distance = 0.0;
+        for (n, ((split, sector), split_distance)) in bm_splits.iter().zip(bm_sectors.iter()).zip(stage_splits.iter()).enumerate() {
+            let driver_split = driver_splits[n];
+            let driver_sector = driver_sectors[n];
+            let col = (n*3 + 3) as u16;
+            sheet.write_with_format(row,
+                col,
+                split.to_string(),
+                &formats.stage_time)?;
+
+            if split.is_valid() && driver_split.is_valid() {
+                let cumulative_delta = driver_split.diff_per_mile(&split, *split_distance);
+
+                let this_sector = split_distance - prev_split_distance;
+                let sector_delta = driver_sector.diff_per_mile(&sector, this_sector);
+                sheet.write_with_format(row,
+                    col+1,
+                    sector_delta.to_string(),
+                    formats.delta(sector_delta))?;
+                sheet.write_with_format(row,
+                    col+2,
+                    cumulative_delta.to_string(),
+                    formats.delta(cumulative_delta))?;
+            }
+            prev_split_distance = *split_distance;
+        }
+    }
     Ok(())
 }
 
-pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
-
+pub fn build_overview(rally: &structures::Rally, uids: &UidMap, driver: &structures::Entry, benchmarks: &Vec<&structures::Entry>,  sheet: &mut xls::Worksheet) -> Result<(), Box<dyn Error>> {
     let formats = format::get_formats();
-    let driver = rally.entries.iter()
-        .filter(|x| x.number == driver)
-        .next()
-        .ok_or_else(|| Box::new(SpreadSheetError::new(format!("Driver {} did not race in {}", driver, rally.title))))?;
-    let benchmarks: Vec<_> = rally.entries.iter().filter(|x| benchmarks.contains(&x.number)).collect();
 
-    let mut workbook = Workbook::new();
-    let worksheet = workbook.add_worksheet();
-    worksheet.set_name(&rally.slug)?;
-
-    // Welp time to do a bunch of bookkeeping!
     let stage_start_row = 2;
     // Title/Stage names columns
-    worksheet.set_column_width(0, 18)?;
-    worksheet.write_with_format(0, 0, &rally.title, &formats.bold)?;
-    worksheet.write_with_format(1, 0, "Stage Name", &formats.heading)?;
-    worksheet.write_with_format(1, 1, "Length", &formats.heading)?;
+    sheet.set_column_width(0, 18)?;
+    sheet.write_with_format(0, 0, &rally.title, &formats.bold)?;
+    sheet.write_with_format(1, 0, "Stage Name", &formats.heading)?;
+    sheet.write_with_format(1, 1, "Length", &formats.heading)?;
 
     // Milage column
-    worksheet.set_column_width(1, 8)?;
+    sheet.set_column_width(1, 8)?;
 
     let format_time = |time: &structures::StageTime, overall_win: &Option<structures::StageTime>, category_class_win: &Option<structures::StageTime>| {
         if !time.is_valid() {
@@ -159,42 +237,29 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
         }
     };
 
-    let format_delta = |delta: structures::Delta| {
-        match delta.kind {
-            structures::DeltaKind::Invalid |
-                structures::DeltaKind::Equal => &formats.delta_invalid,
-            structures::DeltaKind::Faster => &formats.delta_faster,
-            structures::DeltaKind::Slower => &formats.delta
-        }
-    };
-
     let driver_column = 2;
     let benchmark_start_column = 4;
 
-    worksheet.write_with_format(1, driver_column,
+    sheet.write_with_format(1, driver_column,
         format!("{}", driver.number), // TODO(richo) Do the uid lookup thing to figure out who we are
         &formats.heading)?;
     for (i, benchmark) in benchmarks.iter().enumerate() {
-        let bm_driver = &uids[&benchmark.driverUID];
-        let driver_last_name = bm_driver.last_name();
-        let bm_codriver = &uids[&benchmark.codriverUID];
-        let codriver_last_name = bm_codriver.last_name();
 
-        worksheet.merge_range(0, benchmark_start_column + (i *2 ) as u16,
+        sheet.merge_range(0, benchmark_start_column + (i *2 ) as u16,
                               0, benchmark_start_column + 1 + (i * 2) as u16,
-            &format!("{}/{}", driver_last_name, codriver_last_name),
+                              &benchmark.names(&uids),
             &formats.driver_names)?;
-        worksheet.write_with_format(1, benchmark_start_column + (i * 2) as u16,
+        sheet.write_with_format(1, benchmark_start_column + (i * 2) as u16,
             format!("{}", benchmark.number),
             &formats.heading)?;
-        worksheet.write_with_format(1, benchmark_start_column + 1 + (i * 2) as u16,
+        sheet.write_with_format(1, benchmark_start_column + 1 + (i * 2) as u16,
             "Diff s/mi",
             &formats.heading)?;
     }
 
     for (stage_number, stage) in rally.stages.iter().enumerate() {
-        worksheet.write_with_format(stage_start_row + stage_number as u32, 0, &stage.name, &formats.stage_name)?;
-        worksheet.write_with_format(stage_start_row + stage_number as u32, 1, stage.length, &formats.stage_length)?;
+        sheet.write_with_format(stage_start_row + stage_number as u32, 0, &stage.name, &formats.stage_name)?;
+        sheet.write_with_format(stage_start_row + stage_number as u32, 1, stage.length, &formats.stage_length)?;
 
         let overall_win = rally.entries.iter()
             .filter(|x| x.class == driver.class)
@@ -215,7 +280,7 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
         if driver.colors[stage_number] == structures::BoxColor::Red {
             fmt = &formats.super_rally;
         }
-        worksheet.write_with_format(stage_start_row + stage_number as u32, driver_column, driver_time.to_string(), fmt)?;
+        sheet.write_with_format(stage_start_row + stage_number as u32, driver_column, driver_time.to_string(), fmt)?;
 
         for (i, benchmark) in benchmarks.iter().enumerate() {
             let benchmark_time = benchmark.times[stage_number];
@@ -223,24 +288,44 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
             if benchmark.colors[stage_number] == structures::BoxColor::Red {
                 fmt = &formats.super_rally;
             }
-            worksheet.write_with_format(stage_start_row + stage_number as u32,
+            sheet.write_with_format(stage_start_row + stage_number as u32,
                 benchmark_start_column + (i * 2) as u16,
                 benchmark_time.to_string(),
                 fmt)?;
             if benchmark_time.is_valid() && driver_time.is_valid() {
                 let delta = driver_time.diff_per_mile(&benchmark_time, stage.length);
-                worksheet.write_with_format(stage_start_row + stage_number as u32,
+                sheet.write_with_format(stage_start_row + stage_number as u32,
                     benchmark_start_column + 1 + (i * 2) as u16,
                     delta.to_string(),
-                    format_delta(delta))?;
+                    formats.delta(delta))?;
             }
         }
     }
 
+    Ok(())
+}
+
+pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
+
+    let driver = rally.entries.iter()
+        .filter(|x| x.number == driver)
+        .next()
+        .ok_or_else(|| Box::new(SpreadSheetError::new(format!("Driver {} did not race in {}", driver, rally.title))))?;
+    let benchmarks: Vec<_> = rally.entries.iter().filter(|x| benchmarks.contains(&x.number)).collect();
+
+    let mut workbook = Workbook::new();
+    let mut overview = workbook.add_worksheet();
+    overview.set_name(&rally.slug)?;
+    build_overview(&rally, &uids, &driver, &benchmarks, &mut overview)?;
+
+
     for (stage_number, stage) in rally.stages.iter().enumerate() {
+        if !stage.has_splits() {
+            continue
+        }
         let mut split_sheet = workbook.add_worksheet();
-        split_sheet.set_name(format!("SS{} {}", stage_number, &stage.name))?;
-        build_stage_with_splits(&rally, &stage, &mut split_sheet)?;
+        split_sheet.set_name(format!("SS{} {}", stage_number+1, &stage.name))?;
+        build_stage_with_splits(&rally, &uids, &driver, &benchmarks, &stage, stage_number, &mut split_sheet)?;
     }
 
     Ok(workbook)

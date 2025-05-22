@@ -148,6 +148,26 @@ pub struct StageTime {
     time: time::Duration,
 }
 
+impl std::ops::Add for StageTime {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            time: self.time + other.time,
+        }
+    }
+}
+
+impl std::ops::Sub for StageTime {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            time: self.time - other.time,
+        }
+    }
+}
+
 impl StageTime {
     pub fn is_valid(&self) -> bool {
         !self.time.is_zero()
@@ -170,6 +190,12 @@ impl StageTime {
             }
         }
         return Delta::equal();
+    }
+
+    pub fn zero() -> Self {
+        Self {
+            time: std::time::Duration::ZERO,
+        }
     }
 }
 
@@ -274,12 +300,76 @@ pub struct Entry {
         pub colors: Vec<BoxColor>,
         penalties: Vec<Penalty>,
         retirements: Vec<Retirement>,
+        pub splits: Option<Vec<Vec<StageTime>>>,
 }
+
+impl Entry {
+    pub fn driver<'a>(&self, map: &'a UidMap) -> &'a Uid {
+        &map[&self.driverUID]
+    }
+
+    pub fn codriver<'a>(&self, map: &'a UidMap) -> &'a Uid {
+        &map[&self.codriverUID]
+    }
+
+    pub fn names(&self, map: &UidMap) -> String {
+        format!("{}/{}", self.driver(&map).l, self.codriver(&map).l)
+    }
+
+    /// This is the cumulative time to this split
+    pub fn splits_with_finish(&self) -> Vec<Vec<StageTime>> {
+        // TODO(richo) There's some clever way to do this with once and chain but I'm tired
+        let mut splits = self.splits.clone().unwrap_or_else(|| {
+            let mut vec = vec![];
+            for _ in 0..self.times.len() {
+                vec.push(vec![])
+            };
+            vec
+        });
+        for (splits, time) in splits.iter_mut().zip(self.times.iter()) {
+            splits.push(*time);
+        }
+        splits
+    }
+
+    /// The sector time in this split
+    pub fn sectors_with_finish(&self) -> Vec<Vec<StageTime>> {
+        let mut sectors = self.splits_with_finish();
+        for stage in sectors.iter_mut() {
+            let mut prev_time = StageTime::zero();
+            for time in stage.iter_mut() {
+                let elapsed = *time - prev_time;
+                *time = elapsed;
+                prev_time = elapsed;
+            }
+        }
+
+        sectors
+    }
+}
+
 
 #[derive(Deserialize, Clone)]
 pub struct Stage {
     pub name: String,
     pub length: f32,
+    pub splits: Option<Vec<f32>>,
+}
+
+impl Stage {
+    pub fn has_splits(&self) -> bool {
+        match &self.splits {
+            Some(n) => n.len() > 0,
+            None => false,
+        }
+    }
+
+    pub fn splits_with_finish(&self) -> Vec<f32> {
+        // TODO(richo) There's some clever way to do this with once and chain but I'm tired
+        let mut splits = self.splits.clone().unwrap_or_else(Vec::new);
+        splits.push(self.length);
+        splits
+    }
 }
 
 #[derive(Deserialize, Clone)]
