@@ -143,7 +143,7 @@ struct Retirement {
     reason: String,
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug)]
 pub struct StageTime {
     time: time::Duration,
 }
@@ -335,9 +335,13 @@ impl Entry {
     /// The sector time in this split
     pub fn sectors_with_finish(&self) -> Vec<Vec<StageTime>> {
         let mut sectors = self.splits_with_finish();
+        println!("{:?}", &sectors);
         for stage in sectors.iter_mut() {
             let mut prev_time = StageTime::zero();
             for time in stage.iter_mut() {
+                if ! time.is_valid() {
+                    continue
+                }
                 let elapsed = *time - prev_time;
                 *time = elapsed;
                 prev_time = elapsed;
