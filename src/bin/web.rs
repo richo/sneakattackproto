@@ -22,13 +22,14 @@ use regex::Regex;
 #[derive(Clone)]
 struct RallyState {
     uids: HashMap<usize, structures::Uid>,
-    rallies: HashMap<usize, HashMap<String, structures::Rally>>,
+    rallies: HashMap<String, HashMap<String, structures::Rally>>,
 }
 
 // Keep these in the order you want them displayed in the web interface
-const RALLY_DATA: &[(usize, &'static str)] = &[
-    (2025, "2025rallies.json"),
-    (2024, "2024rallies.json"),
+const RALLY_DATA: &[(&'static str, &'static str)] = &[
+    ("2025", "2025rallies.json"),
+    ("2024", "2024rallies.json"),
+    // ("nonARA", "nonARArallies.json"),
 ];
 
 fn build_state() -> RallyState {
@@ -46,8 +47,15 @@ fn build_state() -> RallyState {
         for rally in rallies_list {
             data.insert(rally.slug.clone(), rally);
         }
-        rallies.insert(*year, data);
+        rallies.insert((*year).into(), data);
     }
+
+    let non_ara: structures::NonARARallies = spreadsheet::load_sneakattack_json("nonARArallies.json").unwrap();
+    let mut data = HashMap::new();
+    for rally in non_ara.archive {
+        data.insert(rally.slug.clone(), rally.into());
+    }
+    rallies.insert("nonARA".into(), data);
 
     RallyState {
         uids,
@@ -87,13 +95,8 @@ async fn render_timecomp(input: Query<TimeComp>, State(state): State<RallyState>
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to parse year|slug"),
             ))?;
-    let year: usize = year.parse()
-        .map_err(|_| (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to parse year {year}"),
-        ))?;
 
-    let active = &state.rallies[&year][slug];
+    let active = &state.rallies[year][slug];
 
     let mut book = spreadsheet::build_spreadsheet(&active, &state.uids, input.driver, &input.benchmarks).map_err(|e| (
             StatusCode::INTERNAL_SERVER_ERROR,

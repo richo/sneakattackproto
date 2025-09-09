@@ -87,6 +87,39 @@ pub struct Rally {
     pub stages: Vec<Stage>,
 }
 
+#[derive(Deserialize, Clone)]
+pub struct NonARARallies {
+    firstYear: usize,
+    pub archive: Vec<NonARARally>,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct NonARARally {
+    sanction: String,
+    source: String,
+    precize: usize,
+    pub title: String,
+    pub slug: String,
+    startDate: String,
+    finishDate: String,
+    pub stages: Vec<Stage>,
+    pub entries: Vec<Entry>,
+}
+
+impl From<NonARARally> for Rally {
+    fn from(other: NonARARally) -> Self {
+        Self {
+            source: other.source,
+            startDate: other.startDate,
+            finishDate: other.finishDate,
+            title: other.title,
+            slug: other.slug,
+            entries: other.entries,
+            stages: other.stages,
+        }
+    }
+}
+
 impl Rally {
     pub fn entry_by_driver_number<'a>(&'a self, number: usize) -> Option<&'a Entry> {
         self.entries.iter().filter(|i| i.number == number).next()
