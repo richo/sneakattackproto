@@ -50,12 +50,12 @@ fn build_state() -> RallyState {
         rallies.insert((*year).into(), data);
     }
 
-    let non_ara: structures::NonARARallies = spreadsheet::load_sneakattack_json("nonARArallies.json").unwrap();
+    let cars: structures::CarsRallies = spreadsheet::load_sneakattack_json("cars_rallies.json").unwrap();
     let mut data = HashMap::new();
-    for rally in non_ara.archive {
-        data.insert(rally.slug.clone(), rally.into());
+    for rally in cars.rallies() {
+        data.insert(rally.slug.clone(), rally);
     }
-    rallies.insert("nonARA".into(), data);
+    rallies.insert("CARS".into(), data);
 
     RallyState {
         uids,

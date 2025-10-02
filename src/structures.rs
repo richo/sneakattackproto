@@ -6,6 +6,8 @@ use serde::de::{self, Visitor, Deserializer};
 use std::fmt;
 use std::collections::HashMap;
 
+use crate::time_parser::parse_stage_time;
+
 pub type UidMap = HashMap::<usize, Uid>;
 
 struct StageTimeRegexes {
@@ -13,16 +15,18 @@ struct StageTimeRegexes {
     minutesre: Regex,
     secondsre: Regex,
     nosecondsre: Regex,
+    weirdbrokentimere: Regex,
 }
 
-fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
+fn old_parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
     static REGEX: OnceLock<StageTimeRegexes> = OnceLock::new();
     let regexes = REGEX.get_or_init(|| {
         StageTimeRegexes {
-            hoursre: Regex::new(r"^(\d+):(\d+):(\d+\.\d+)$").unwrap(),
+            hoursre: Regex::new(r"^(\d+):(\d+):(\d+)(\.\d+)?$").unwrap(),
             minutesre: Regex::new(r"^(\d+):(\d+\.\d+)$").unwrap(),
-            secondsre: Regex::new(r"^(\d+\.\d+)$").unwrap(),
+            secondsre: Regex::new(r"^:?(\d+\.?\d*)$").unwrap(),
             nosecondsre: Regex::new(r"^(\d+):(\d+)$").unwrap(),
+            weirdbrokentimere: Regex::new(r"^(\d+):(\d+\.\d+)\.\d+$").unwrap(),
         }
     });
 
@@ -31,7 +35,7 @@ fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
         return Some(StageTime { time: time::Duration::new(0, 0) })
     }
 
-    for (_, [hours, minutes, seconds]) in regexes.hoursre.captures_iter(time).map(|c| c.extract()) {
+    for (_, [hours, minutes, seconds, tenths]) in regexes.hoursre.captures_iter(time).map(|c| c.extract()) {
         let hours: u64 = hours.parse().unwrap();
         let minutes: u64 = minutes.parse().unwrap();
         let seconds: f32 = seconds.parse().unwrap();
@@ -73,6 +77,27 @@ fn parse_stage_time<'a>(time: &'a str) -> Option<StageTime> {
             0
         ) } )
     }
+    for (_, [minutes, seconds]) in regexes.nosecondsre.captures_iter(time).map(|c| c.extract()) {
+        let minutes: u64 = minutes.parse().unwrap();
+        let seconds: f32 = seconds.parse().unwrap();
+        return Some(StageTime { time: time::Duration::new(
+            (minutes * 60) +
+            seconds as u64,
+            0
+        ) } )
+    }
+    // This duplicates the above method exactly, accounting only for some weird times like
+    // `5:25.0.01` in some non ARA events. We discard that last fraction because I don't know or
+    // care what it's meant to be.
+    for (_, [minutes, seconds]) in regexes.weirdbrokentimere.captures_iter(time).map(|c| c.extract()) {
+        let minutes: u64 = minutes.parse().unwrap();
+        let seconds: f32 = seconds.parse().unwrap();
+        return Some(StageTime { time: time::Duration::new(
+            (minutes * 60) +
+            seconds as u64,
+            0
+        ) } )
+    }
     return None
 }
 
@@ -88,16 +113,21 @@ pub struct Rally {
 }
 
 #[derive(Deserialize, Clone)]
-pub struct NonARARallies {
-    firstYear: usize,
-    pub archive: Vec<NonARARally>,
+pub struct CarsRallies {
+    pub archive: Vec<CarsRally>,
+}
+
+impl CarsRallies {
+    pub fn rallies(&self) -> impl Iterator<Item=Rally> {
+        self.archive.iter().map(|x| x.clone().into())
+    }
 }
 
 #[derive(Deserialize, Clone)]
-pub struct NonARARally {
+pub struct CarsRally {
     sanction: String,
     source: String,
-    precize: usize,
+    precision: Option<usize>,
     pub title: String,
     pub slug: String,
     startDate: String,
@@ -106,8 +136,8 @@ pub struct NonARARally {
     pub entries: Vec<Entry>,
 }
 
-impl From<NonARARally> for Rally {
-    fn from(other: NonARARally) -> Self {
+impl From<CarsRally> for Rally {
+    fn from(other: CarsRally) -> Self {
         Self {
             source: other.source,
             startDate: other.startDate,
@@ -134,18 +164,97 @@ pub enum Category {
      #[serde(rename(deserialize = "Rally Ready RallySprint"))]
     RallyReadyRallySprint,
     Exhibition,
+    // Non ARA
+    Dual,
+    #[serde(rename(deserialize = "ARC/NRS"))]
+    ArcNrs,
+    #[serde(rename(deserialize = "PRC/CRS"))]
+    PrcCrs,
 }
 #[derive(Deserialize, Copy, Clone, PartialEq)]
 pub enum Class {
+    // These ARA classes are the only ones I'd really trust a lot
+    #[serde(rename(deserialize = "O4WD"))]
+    #[serde(rename(deserialize = "ARA-O4WD"))]
     O4WD,
     L4WD,
+    #[serde(rename(deserialize = "2WDO"))]
+    #[serde(rename(deserialize = "O2WD"))]
     O2WD,
     L2WD,
+    #[serde(rename(deserialize = "RC2"))]
+    #[serde(rename(deserialize = "Rally2"))]
     RC2,
+
     NA4WD,
     #[serde(rename(deserialize = "Class-X"))]
     #[serde(rename(deserialize = "Class X"))]
     ClassX,
+    // Non ARA
+    O,
+    G5,
+    G2,
+    P,
+    PGT,
+    SP,
+    E,
+    EX,
+    L,
+    SB,
+    B,
+    NLO,
+    SUP4W,
+    // Is this the same as P?
+    #[serde(rename(deserialize = "4WDP"))]
+    #[serde(rename(deserialize = "P4WD"))]
+    #[serde(rename(deserialize = "4WD"))]
+    P4WD,
+
+    #[serde(rename(deserialize = "2WDP"))]
+    #[serde(rename(deserialize = "P2WD"))]
+    #[serde(rename(deserialize = "2WD"))]
+    P2WD,
+
+    SUPEN,
+    // Is this l2wd?
+    O2L,
+    O2H,
+    OAH,
+    OAL,
+
+    PRO,
+
+    #[serde(rename(deserialize = "SxS"))]
+    #[serde(rename(deserialize = "SXS"))]
+    SxS,
+    #[serde(rename(deserialize = "SxS Prod"))]
+    SxSProd,
+    #[serde(rename(deserialize = "SxS Prod T"))]
+    SxSProdT,
+
+    // O4?
+    Open,
+
+    #[serde(rename(deserialize = "CRS-5"))]
+    Crs5,
+    #[serde(rename(deserialize = "CRS-2"))]
+    Crs2,
+
+    #[serde(rename(deserialize = "CSR OL"))]
+    CsrOl,
+
+    #[serde(rename(deserialize = "PerStock"))]
+    #[serde(rename(deserialize = "Perf Stk"))]
+    PerStock,
+
+    #[serde(rename(deserialize = "SO/E"))]
+    SoE,
+
+    #[serde(rename(deserialize = "Open Lite"))]
+    OpenLite,
+
+    // Is this an R5?
+    Rally5,
 }
 
 #[derive(Deserialize, Clone, PartialEq)]
@@ -155,6 +264,9 @@ pub enum BoxColor {
     None,
     #[serde(rename(deserialize = "red"))]
     Red,
+    // nine
+    #[serde(rename(deserialize = "9"))]
+    Nine,
 }
 
 #[derive(Deserialize, Clone)]
@@ -178,7 +290,7 @@ struct Retirement {
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug)]
 pub struct StageTime {
-    time: time::Duration,
+    pub time: time::Duration,
 }
 
 impl std::ops::Add for StageTime {

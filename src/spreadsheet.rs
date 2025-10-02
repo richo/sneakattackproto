@@ -92,7 +92,8 @@ fn fetch_sneakattack_json<'a, T: serde::de::DeserializeOwned>(name: &'a str) -> 
 pub fn load_sneakattack_json<'a, T: serde::de::DeserializeOwned>(name: &'a str) -> Result<T, ()> {
     let fh = fs::File::open(name).unwrap();
     let res = serde_json::from_reader(fh);
-    Ok(res.unwrap())
+    let msg = format!("Loading: {}", name);
+    Ok(res.expect(&msg))
 }
 
 fn get_rallies_by_year(year: usize) -> Result<(), ()> {
