@@ -10,5 +10,8 @@ update_rallies:
 html/timecomp.html: html/timecomp.html.erb html/generate-form.rb 2024rallies.json 2025rallies.json
 	cd html && ruby generate-form.rb
 
+copy: html/timecomp.html
+	cp html/timecomp.html ~/src/recce.tools/
 
-.PHONY: default update_rallies
+
+.PHONY: default update_rallies copy
