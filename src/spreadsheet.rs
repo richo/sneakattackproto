@@ -315,7 +315,7 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
 
     let mut workbook = Workbook::new();
     let mut overview = workbook.add_worksheet();
-    overview.set_name(&rally.slug)?;
+    overview.set_name(&rally.slug[..31])?;
     build_overview(&rally, &uids, &driver, &benchmarks, &mut overview)?;
 
 
