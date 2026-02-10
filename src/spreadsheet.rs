@@ -305,6 +305,18 @@ pub fn build_overview(rally: &structures::Rally, uids: &UidMap, driver: &structu
     Ok(())
 }
 
+const BAD_CHARS: [char; 7] = ['[', ']',  ':', '*', '?', '/', '\\'];
+fn prepare_slug(name: &str) -> String {
+    let len = name.len();
+    let slug_len = ::std::cmp::min(len, 31);
+    let mut slug: String = name[..slug_len].into();
+    for c in BAD_CHARS.iter() {
+        slug = slug.replace(*c, "_");
+    }
+
+    slug
+}
+
 pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize, benchmarks: &[usize]) -> Result<xls::Workbook, Box<dyn Error>> {
 
     let driver = rally.entries.iter()
@@ -315,7 +327,8 @@ pub fn build_spreadsheet(rally: &structures::Rally, uids: &UidMap, driver: usize
 
     let mut workbook = Workbook::new();
     let mut overview = workbook.add_worksheet();
-    overview.set_name(&rally.slug[..31])?;
+    let slug = prepare_slug(&rally.slug);
+    overview.set_name(slug)?;
     build_overview(&rally, &uids, &driver, &benchmarks, &mut overview)?;
 
 
