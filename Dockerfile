@@ -14,6 +14,7 @@ WORKDIR /app
 COPY --from=builder /usr/src/app/web /usr/local/bin
 COPY --from=builder /usr/src/app/2024rallies.json .
 COPY --from=builder /usr/src/app/2025rallies.json .
+COPY --from=builder /usr/src/app/2026rallies.json .
 COPY --from=builder /usr/src/app/uidsSmall.json .
 COPY --from=builder /usr/src/app/html/timecomp.html html/
 ENTRYPOINT ["/usr/local/bin/web"]

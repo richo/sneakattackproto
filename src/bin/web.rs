@@ -27,6 +27,7 @@ struct RallyState {
 
 // Keep these in the order you want them displayed in the web interface
 const RALLY_DATA: &[(usize, &'static str)] = &[
+    (2026, "2026rallies.json"),
     (2025, "2025rallies.json"),
     (2024, "2024rallies.json"),
 ];

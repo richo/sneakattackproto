@@ -7,6 +7,7 @@ require 'irb'
 
 # This has to be kept in sync with the map in web. Probably do something smarter.
 RALLIES = {
+  "2026" => "../2026rallies.json",
   "2025" => "../2025rallies.json",
   "2024" => "../2024rallies.json",
 }

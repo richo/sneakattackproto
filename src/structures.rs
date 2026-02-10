@@ -100,6 +100,8 @@ pub enum Category {
     RallySprint,
      #[serde(rename(deserialize = "Rally Ready RallySprint"))]
     RallyReadyRallySprint,
+     #[serde(rename(deserialize = "ARA RallySprint"))]
+    AraRallySprint,
     Exhibition,
 }
 #[derive(Deserialize, Copy, Clone, PartialEq)]
