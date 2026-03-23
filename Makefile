@@ -1,5 +1,8 @@
 default: update_rallies html/timecomp.html
 
+deploy:
+	cargo run --release --bin check
+	fly deploy
 
 update_rallies:
 	curl https://sneakattackrally.com/ARACombinerThing/data/nonARA/allRallies.json > nonARArallies.json
@@ -15,4 +18,4 @@ copy: html/timecomp.html
 	cp html/timecomp.html ~/src/recce.tools/
 
 
-.PHONY: default update_rallies copy
+.PHONY: default update_rallies copy deploy
