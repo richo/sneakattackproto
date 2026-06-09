@@ -339,14 +339,15 @@ impl Entry {
         let mut sectors = self.splits_with_finish();
         println!("{:?}", &sectors);
         for stage in sectors.iter_mut() {
-            let mut prev_time = StageTime::zero();
+            let mut elapsed = StageTime::zero();
             for time in stage.iter_mut() {
                 if ! time.is_valid() {
                     continue
                 }
-                let elapsed = *time - prev_time;
-                *time = elapsed;
-                prev_time = elapsed;
+                let tmp = time.clone();
+                let this_sector = *time - elapsed;
+                *time = this_sector;
+                elapsed = tmp;
             }
         }
 
