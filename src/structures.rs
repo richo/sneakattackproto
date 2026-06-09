@@ -402,3 +402,38 @@ impl Uid {
         &self.l
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::spreadsheet;
+
+    fn test_entry() -> Entry {
+        let rallies: Vec<Rally> = spreadsheet::load_sneakattack_json("test-stage.json").expect("oh no");
+        let rally = rallies.iter().filter(|i| i.slug == "test_rally").next().unwrap();
+        let driver = rally.entries.iter()
+            .filter(|x| x.number == 107)
+            .next()
+            .unwrap();
+        driver.clone()
+
+    }
+
+    fn stage_time_in_mins(mins: u64) -> StageTime {
+        let duration = ::std::time::Duration::new(mins * 60, 0);
+        StageTime { time: duration }
+    }
+
+    #[test]
+    fn generates_sectors() {
+        let driver = test_entry();
+        let sectors = driver.sectors_with_finish();
+        assert_eq!(sectors[0], vec![
+            stage_time_in_mins(5),
+            stage_time_in_mins(4),
+            stage_time_in_mins(6),
+            stage_time_in_mins(5),
+            stage_time_in_mins(5),
+        ]);
+    }
+}
