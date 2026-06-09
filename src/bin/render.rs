@@ -12,9 +12,9 @@ fn main() -> Result<(), reqwest::Error> {
     for uid in uids_list {
         uids.insert(uid.uid, uid);
     }
-    let rallies: Vec<structures::Rally> = spreadsheet::load_sneakattack_json("2025rallies.json").expect("oh no");
+    let rallies: Vec<structures::Rally> = spreadsheet::load_sneakattack_json("2026rallies.json").expect("oh no");
 
-    let slug = "oregon_trail_rally_2025";
+    let slug = "olympus_rally_2026";
 
     let active = rallies.iter().filter(|i| i.slug == slug).next().unwrap();
 
