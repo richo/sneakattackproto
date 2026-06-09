@@ -337,7 +337,6 @@ impl Entry {
     /// The sector time in this split
     pub fn sectors_with_finish(&self) -> Vec<Vec<StageTime>> {
         let mut sectors = self.splits_with_finish();
-        println!("{:?}", &sectors);
         for stage in sectors.iter_mut() {
             let mut elapsed = StageTime::zero();
             for time in stage.iter_mut() {
