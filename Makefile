@@ -12,7 +12,7 @@ update_rallies:
 	curl https://sneakattackrally.com/ARACombinerThing/data/uidsSmall.json > uidsSmall.json
 
 html/timecomp.html: html/timecomp.html.erb html/generate-form.rb 2024rallies.json 2025rallies.json
-	cd html && ruby generate-form.rb
+	cd html && bundle exec ruby generate-form.rb
 
 copy: html/timecomp.html
 	cp html/timecomp.html ~/src/recce.tools/

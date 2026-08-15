@@ -5,6 +5,8 @@ require 'json'
 require 'set'
 require 'irb'
 
+require "sorted_set"
+
 # This has to be kept in sync with the map in web. Probably do something smarter.
 RALLIES = {
   "2026" => "../2026rallies.json",
