@@ -103,6 +103,8 @@ pub enum Category {
      #[serde(rename(deserialize = "ARA RallySprint"))]
     AraRallySprint,
     Exhibition,
+    #[serde(rename(deserialize = "STRYKER Challenge"))]
+    StrykerChallenge,
 }
 #[derive(Deserialize, Copy, Clone, PartialEq)]
 pub enum Class {
@@ -115,6 +117,8 @@ pub enum Class {
     #[serde(rename(deserialize = "Class-X"))]
     #[serde(rename(deserialize = "Class X"))]
     ClassX,
+    #[serde(rename(deserialize = "STRYKER"))]
+    Stryker,
 }
 
 #[derive(Deserialize, Clone, PartialEq)]
