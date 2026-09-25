@@ -8666,7 +8666,7 @@
   {
     "uid": 1567,
     "f": "Ricardo",
-    "l": "Trivino"
+    "l": "Triviño"
   },
   {
     "uid": 1568,
@@ -9311,7 +9311,9 @@
   {
     "uid": 1686,
     "f": "Erik",
-    "l": "Buetow"
+    "l": "Buetow",
+    "ig": "nomad.motorsports.rally",
+    "yt": "@nomadmotorsports?si=iwJA7t1vjQjmOvyT"
   },
   {
     "uid": 1687,
@@ -10397,7 +10399,7 @@
   {
     "uid": 1887,
     "f": "Charlotte",
-    "l": "Himes"
+    "l": "Himes-Nykanen"
   },
   {
     "uid": 1888,
@@ -10978,7 +10980,10 @@
   {
     "uid": 1992,
     "f": "Connor",
-    "l": "Himes"
+    "l": "Himes",
+    "tn": "Sisu Racing Team",
+    "fb": "connor.himes.71",
+    "ig": "scrappysubi2.5rs"
   },
   {
     "uid": 1993,
@@ -12412,8 +12417,6 @@
     "ig": "bk989",
     "yt": "brentenkelly",
     "tw": "therealbk989",
-    "th": "bk989",
-    "web": "https://dirtfish.com",
     "email": "brentenkelly@gmail.com"
   },
   {
@@ -13532,9 +13535,11 @@
     "uid": 2481,
     "f": "Cray",
     "l": "Dumeah",
+    "tn": "Team Illuminata Motorsport",
     "fb": "cray.dumeah/",
     "ig": "cafe_ricer/?hl=en",
     "yt": "@craydumeah",
+    "web": "https://teamilluminata.com/",
     "email": "craydumeah@gmail.com"
   },
   {
@@ -15064,7 +15069,7 @@
     "uid": 2782,
     "f": "Cory",
     "l": "Grunwald",
-    "ig": "rallytimecardcalculator/"
+    "ig": "greenforestrally/"
   },
   {
     "uid": 2783,
@@ -20017,7 +20022,10 @@
   {
     "uid": 3763,
     "f": "Remington",
-    "l": "Roberts"
+    "l": "Roberts",
+    "tn": "Atlanta Rallysport",
+    "ig": "atlantarallysport",
+    "yt": "atlantarallysport"
   },
   {
     "uid": 3764,
@@ -20121,8 +20129,8 @@
   },
   {
     "uid": 3784,
-    "f": "Benjamin",
-    "l": "McGrath"
+    "f": "",
+    "l": ""
   },
   {
     "uid": 3785,
@@ -20468,18 +20476,18 @@
   },
   {
     "uid": 3852,
-    "f": "",
-    "l": ""
+    "f": "Jillian",
+    "l": "Garber"
   },
   {
     "uid": 3853,
-    "f": "",
-    "l": ""
+    "f": "Charles",
+    "l": "Tompkins"
   },
   {
     "uid": 3854,
-    "f": "",
-    "l": ""
+    "f": "Sergio",
+    "l": "Salom Lopez"
   },
   {
     "uid": 3855,
@@ -20490,5 +20498,80 @@
     "uid": 3856,
     "f": "Martin",
     "l": "Järveoja"
+  },
+  {
+    "uid": 3857,
+    "f": "Noah",
+    "l": "Simone"
+  },
+  {
+    "uid": 3858,
+    "f": "Jennifer",
+    "l": "Falkner"
+  },
+  {
+    "uid": 3859,
+    "f": "Colin",
+    "l": "Redner"
+  },
+  {
+    "uid": 3860,
+    "f": "Devyn",
+    "l": "Taylor"
+  },
+  {
+    "uid": 3861,
+    "f": "Stephanie",
+    "l": "Bish"
+  },
+  {
+    "uid": 3862,
+    "f": "Bruno Urmo",
+    "l": "Gryc"
+  },
+  {
+    "uid": 3863,
+    "f": "Dave",
+    "l": "Nadeau"
+  },
+  {
+    "uid": 3864,
+    "f": "Christopher",
+    "l": "Nadeau"
+  },
+  {
+    "uid": 3865,
+    "f": "Anthony",
+    "l": "Bechard"
+  },
+  {
+    "uid": 3866,
+    "f": "Étienne",
+    "l": "Beauchamp-Plouffe"
+  },
+  {
+    "uid": 3867,
+    "f": "Victoria",
+    "l": "East"
+  },
+  {
+    "uid": 3868,
+    "f": "Samantha",
+    "l": "Jacques"
+  },
+  {
+    "uid": 3869,
+    "f": "Caleb",
+    "l": "Honsinger"
+  },
+  {
+    "uid": 3870,
+    "f": "Brandon",
+    "l": "Brewster"
+  },
+  {
+    "uid": 3871,
+    "f": "James",
+    "l": "Morgan"
   }
 ]
