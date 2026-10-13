@@ -230,7 +230,7 @@
     "l": "Miller",
     "fb": "michelle.miller.248106/",
     "ig": "mmillerracing",
-    "yt": "michellemiller2613",
+    "yt": "@michellemiller2613",
     "email": "watchoutcones@gmail.com"
   },
   {
@@ -10399,7 +10399,7 @@
   {
     "uid": 1887,
     "f": "Charlotte",
-    "l": "Himes-Nykanen"
+    "l": "Nykanen"
   },
   {
     "uid": 1888,
@@ -10989,7 +10989,7 @@
     "uid": 1993,
     "f": "Corey",
     "l": "Morris",
-    "ig": "noiseboysrallyteam ",
+    "ig": "corey_morris922",
     "yt": "@noiseboysrallyteam9119"
   },
   {
@@ -13561,7 +13561,10 @@
     "uid": 2485,
     "f": "Cole",
     "l": "Clements",
-    "ig": "coleclementss"
+    "tn": "Honda of America Racing Team (HART)",
+    "fb": "cole.clements.12/",
+    "ig": "coleclementss",
+    "email": "coleclements21@gmail.com"
   },
   {
     "uid": 2486,
@@ -20129,8 +20132,8 @@
   },
   {
     "uid": 3784,
-    "f": "",
-    "l": ""
+    "f": "Jim",
+    "l": "Theriault"
   },
   {
     "uid": 3785,
@@ -20527,7 +20530,10 @@
   {
     "uid": 3862,
     "f": "Bruno Urmo",
-    "l": "Gryc"
+    "l": "Gryc",
+    "fb": "BrunoGryc",
+    "ig": "brunogryc",
+    "yt": "GrycRacingTeam"
   },
   {
     "uid": 3863,
@@ -20573,5 +20579,45 @@
     "uid": 3871,
     "f": "James",
     "l": "Morgan"
+  },
+  {
+    "uid": 3872,
+    "f": "Nicholas",
+    "l": "Whaley"
+  },
+  {
+    "uid": 3873,
+    "f": "Raymond",
+    "l": "Whaley"
+  },
+  {
+    "uid": 3874,
+    "f": "Tabatha",
+    "l": "Wood"
+  },
+  {
+    "uid": 3875,
+    "f": "Seth",
+    "l": "Rowley"
+  },
+  {
+    "uid": 3876,
+    "f": "Scott",
+    "l": "Justus"
+  },
+  {
+    "uid": 3877,
+    "f": "Scott",
+    "l": "Justus"
+  },
+  {
+    "uid": 3878,
+    "f": "Dai",
+    "l": "Yoshihara"
+  },
+  {
+    "uid": 3879,
+    "f": "Nate",
+    "l": "Suppaiah"
   }
 ]
